@@ -1,5 +1,6 @@
 #![feature(const_fn)]
 #![feature(alloc, allocator_api)]
+#![feature(nonnull_slice_from_raw_parts)]
 #![no_std]
 #![allow(stable_features)]
 
@@ -17,7 +18,7 @@ use alloc::alloc::Alloc;
 #[rustversion::since(2020-02-02)]
 use alloc::alloc::AllocRef;
 use alloc::alloc::{AllocErr, Layout};
-#[rustversion::since(2020-04-02)]
+#[rustversion::all(since(2020-04-02), before(2020-07-28))]
 use alloc::alloc::{AllocInit, MemoryBlock};
 use core::alloc::GlobalAlloc;
 use core::cmp::{max, min};
@@ -245,7 +246,7 @@ unsafe impl AllocRef for Heap {
         self.alloc(layout).map(|p| (p, layout.size()))
     }
 
-    #[rustversion::since(2020-04-02)]
+    #[rustversion::all(since(2020-04-02), before(2020-07-28))]
     fn alloc(&mut self, layout: Layout, init: AllocInit) -> Result<MemoryBlock, AllocErr> {
         self.alloc(layout).map(|p| {
             let block = MemoryBlock {
@@ -257,6 +258,11 @@ unsafe impl AllocRef for Heap {
             }
             block
         })
+    }
+
+    #[rustversion::since(2020-08-04)]
+    fn alloc(&mut self, layout: Layout) -> Result<NonNull<[u8]>, AllocErr> {
+        self.alloc(layout).map(|p| NonNull::slice_from_raw_parts(p, layout.size()))
     }
 
     unsafe fn dealloc(&mut self, ptr: NonNull<u8>, layout: Layout) {
